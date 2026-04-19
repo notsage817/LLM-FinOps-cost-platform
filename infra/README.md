@@ -15,67 +15,7 @@ and all access is mediated through Google's Identity-Aware Proxy (IAP) and stric
 * **Data Warehouse:** Google BigQuery
 * **Orchestration / Processing (Target):** Apache Airflow, dbt, Apache Beam (Dataflow)
 
----
 
-### 🏗️ Architecture Architecture
-
-The following diagram illustrates the flow of data and the network security boundaries established by this Terraform configuration.
-
-```mermaid
-graph TD
-    %% Define Groups
-    subgraph "GCP Project (llm-finops-plf)"
-        subgraph "VPC Network (Private Subnet: 10.0.0.0/24)"
-            NAT[Cloud NAT & Router]
-            VM[Redpanda Broker VM<br>e2-medium | 10.0.0.10]
-            
-            subgraph "Firewalls"
-                FW_SSH[IAP SSH: Port 22]
-                FW_KAFKA_EXT[IAP Kafka: Port 9093]
-                FW_KAFKA_INT[Internal Kafka: Port 9092]
-            end
-        end
-
-        subgraph "Data Lake (GCS)"
-            GCS_DL[Datalake Bucket<br>Nearline Archive]
-            GCS_STG[Dataflow Staging]
-        end
-
-        subgraph "Data Warehouse (BigQuery)"
-            BQ_RAW[Raw Dataset<br>llm_usage_events]
-            BQ_STG[Staging Dataset<br>dbt Views]
-            BQ_MART[Mart Dataset<br>Dashboards]
-        end
-
-        subgraph "Identity & Access (IAM)"
-            SA_DF[Dataflow Worker SA]
-            SA_AF[Airflow Worker SA]
-        end
-    end
-
-    %% External Connections
-    User[Developer Machine] -->|IAP TCP Forwarding| FW_SSH
-    User -->|IAP TCP Forwarding| FW_KAFKA_EXT
-    NAT -->|Outbound Only| Internet((Internet<br>Docker Pulls))
-    
-    %% Data Flow Connections
-    VM -.->|VPC Egress| NAT
-    FW_KAFKA_INT --> VM
-    FW_SSH --> VM
-    FW_KAFKA_EXT --> VM
-    
-    SA_DF -->|Writes| GCS_DL
-    SA_DF -->|Uses| GCS_STG
-    SA_AF -->|Reads| GCS_DL
-    SA_AF -->|Edits| BQ_RAW
-    SA_AF -->|Edits| BQ_STG
-    SA_AF -->|Edits| BQ_MART
-    
-    BQ_RAW -->|dbt Transform| BQ_STG
-    BQ_STG -->|dbt Transform| BQ_MART
-```
-
----
 
 ### 🧩 Component Breakdown
 
