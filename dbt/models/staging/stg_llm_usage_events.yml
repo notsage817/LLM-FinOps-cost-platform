@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_llm_usage_events
+    description: "Cleaned and typed LLM API call events — one row per call"
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: event_timestamp
+        tests:
+          - not_null
+      - name: provider
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["openai", "anthropic", "google"]
+      - name: team
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["search-relevance", "recommendations", "customer-support", "data-science"]
+      - name: status
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["success", "error"]
+      - name: total_cost_usd
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

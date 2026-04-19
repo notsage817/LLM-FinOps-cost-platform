@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: llm_finops_raw
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: llm_finops_raw
+    tables:
+      - name: llm_usage_events
+        description: "Raw LLM API call events loaded from GCS Parquet by Airflow"
+        columns:
+          - name: event_id
+            description: "UUID for each API call"
+          - name: timestamp_utc
+            description: "ISO 8601 string — when the API call was made"
+          - name: provider
+            description: "LLM provider: openai, anthropic, google"
+          - name: model
+            description: "Model name, e.g. gpt-4o, claude-sonnet-4-6"
+          - name: prompt_tokens
+            description: "Input tokens sent to the model"
+          - name: completion_tokens
+            description: "Output tokens returned by the model"
+          - name: cached_tokens
+            description: "Prompt tokens served from cache (not billed at full rate)"
+          - name: prompt_cost_usd
+            description: "Cost of prompt tokens in USD"
+          - name: completion_cost_usd
+            description: "Cost of completion tokens in USD"
+          - name: total_cost_usd
+            description: "Total cost of the API call in USD"
+          - name: latency_ms
+            description: "End-to-end API latency in milliseconds"
+          - name: time_to_first_token_ms
+            description: "Time to first token (streaming) in milliseconds"
+          - name: team
+            description: "Team that made the call: search-relevance, recommendations, customer-support, data-science"
+          - name: feature
+            description: "Feature or use-case within the team"
+          - name: experiment_id
+            description: "A/B experiment identifier, null for baseline traffic"
+          - name: environment
+            description: "Runtime environment: production, staging"
+          - name: status
+            description: "Call outcome: success or error"
+          - name: error_code
+            description: "Error type if status=error, e.g. rate_limit_exceeded"
+          - name: finish_reason
+            description: "Why the model stopped generating: stop, max_tokens"

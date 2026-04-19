@@ -1,0 +1,7 @@
+provider,model,prompt_cost_per_1k_usd,completion_cost_per_1k_usd
+openai,gpt-4o,0.005,0.015
+openai,gpt-4o-mini,0.00015,0.0006
+anthropic,claude-haiku-4-5,0.00025,0.00125
+anthropic,claude-sonnet-4-6,0.003,0.015
+google,gemini-1.5-flash,0.000075,0.0003
+google,gemini-1.5-pro,0.00125,0.005

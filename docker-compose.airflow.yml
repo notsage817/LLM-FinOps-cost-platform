@@ -1,0 +1,84 @@
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9-python3.12
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+    # GCP / pipeline config — populated from .env.airflow
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/secrets/airflow-sa-key.json
+    GCP_PROJECT_ID: ${GCP_PROJECT_ID}
+    GCS_DATALAKE_BUCKET: ${GCS_DATALAKE_BUCKET}
+    BQ_RAW_DATASET: ${BQ_RAW_DATASET:-llm_finops_raw}
+    BQ_STAGING_DATASET: ${BQ_STAGING_DATASET:-llm_finops_staging}
+    BQ_MART_DATASET: ${BQ_MART_DATASET:-llm_finops_mart}
+    # dbt
+    DBT_PROFILES_DIR: /opt/airflow/dbt
+    _PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-google==10.25.0 dbt-bigquery==1.8.0 dbt-core==1.8.0"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./dbt:/opt/airflow/dbt
+    - ./secrets/airflow-sa-key.json:/opt/airflow/secrets/airflow-sa-key.json:ro
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    airflow-postgres:
+      condition: service_healthy
+
+services:
+  airflow-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  airflow-init:
+    <<: *airflow-common
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create
+          --username admin
+          --password admin
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@example.com
+      "
+    restart: "no"
+
+volumes:
+  airflow-postgres-data:
+  airflow-logs:

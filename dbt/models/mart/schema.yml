@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: fct_llm_api_calls
+    description: "One row per LLM API call — event-grain fact table for dashboards"
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+      - name: event_timestamp
+        tests:
+          - not_null
+      - name: event_date
+        tests:
+          - not_null
+      - name: total_cost_usd
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: prompt_tokens
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: billed_prompt_tokens
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

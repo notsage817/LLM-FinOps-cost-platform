@@ -1,0 +1,22 @@
+name: llm_finops
+version: "1.0.0"
+profile: llm_finops
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  llm_finops:
+    staging:
+      +materialized: view
+      +schema: llm_finops_staging
+    mart:
+      +materialized: incremental
+      +schema: llm_finops_mart
+      +partition_by:
+        field: event_date
+        data_type: date
+      +cluster_by: ["team", "model"]
